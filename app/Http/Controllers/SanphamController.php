@@ -2,64 +2,83 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\sanpham;
+use App\Models\Sanpham;
 use Illuminate\Http\Request;
 
 class SanphamController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * 🛍️ Hiển thị danh sách tất cả sản phẩm
      */
     public function index()
     {
-        //
+        $sanphams = Sanpham::with('danhmuc')->get();
+        return response()->json($sanphams);
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * ➕ Thêm sản phẩm mới
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'danhmuc_id' => 'required|exists:danhmucs,id',
+            'tensanpham' => 'required|string|max:255',
+            'gia' => 'required|numeric|min:0',
+            'hinhanh' => 'nullable|string',
+            'mota' => 'nullable|string',
+            'soluong' => 'required|integer|min:0',
+        ]);
+
+        $sanpham = Sanpham::create($validated);
+
+        return response()->json([
+            'message' => 'Thêm sản phẩm thành công!',
+            'data' => $sanpham
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * Xem chi tiết 1 sản phẩm
      */
-    public function show(sanpham $sanpham)
+    public function show($id)
     {
-        //
+        $sanpham = Sanpham::with('danhmuc')->findOrFail($id);
+        return response()->json($sanpham);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Cập nhật sản phẩm
      */
-    public function edit(sanpham $sanpham)
+    public function update(Request $request, $id)
     {
-        //
+        $sanpham = Sanpham::findOrFail($id);
+
+        $validated = $request->validate([
+            'danhmuc_id' => 'required|exists:danhmucs,id',
+            'tensanpham' => 'required|string|max:255',
+            'gia' => 'required|numeric|min:0',
+            'hinhanh' => 'nullable|string',
+            'mota' => 'nullable|string',
+            'soluong' => 'required|integer|min:0',
+        ]);
+
+        $sanpham->update($validated);
+
+        return response()->json([
+            'message' => 'Cập nhật sản phẩm thành công!',
+            'data' => $sanpham
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Xóa sản phẩm
      */
-    public function update(Request $request, sanpham $sanpham)
+    public function destroy($id)
     {
-        //
-    }
+        $sanpham = Sanpham::findOrFail($id);
+        $sanpham->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(sanpham $sanpham)
-    {
-        //
+        return response()->json(['message' => 'Xóa sản phẩm thành công!']);
     }
 }

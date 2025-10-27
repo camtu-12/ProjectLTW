@@ -2,64 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\chitietdonhang;
+use App\Models\Chitietdonhang;
 use Illuminate\Http\Request;
 
 class ChitietdonhangController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * 🧾 Hiển thị danh sách toàn bộ chi tiết đơn hàng
      */
     public function index()
     {
-        //
+        $chitiets = Chitietdonhang::with(['donhang', 'sanpham'])->get();
+        return response()->json($chitiets);
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * ➕ Thêm mới chi tiết đơn hàng
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'donhang_id' => 'required|exists:donhangs,id',
+            'sanpham_id' => 'required|exists:sanphams,id',
+            'soluong'    => 'required|integer|min:1',
+            'gia'        => 'required|numeric|min:0',
+        ]);
+
+        $chitiet = Chitietdonhang::create($validated);
+
+        return response()->json([
+            'message' => 'Thêm chi tiết đơn hàng thành công!',
+            'data' => $chitiet
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * 🔍 Xem chi tiết 1 bản ghi cụ thể
      */
-    public function show(chitietdonhang $chitietdonhang)
+    public function show($id)
     {
-        //
+        $chitiet = Chitietdonhang::with(['donhang', 'sanpham'])->findOrFail($id);
+        return response()->json($chitiet);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * ✏️ Cập nhật chi tiết đơn hàng
      */
-    public function edit(chitietdonhang $chitietdonhang)
+    public function update(Request $request, $id)
     {
-        //
+        $chitiet = Chitietdonhang::findOrFail($id);
+
+        $validated = $request->validate([
+            'soluong' => 'required|integer|min:1',
+            'gia'     => 'required|numeric|min:0',
+        ]);
+
+        $chitiet->update($validated);
+
+        return response()->json([
+            'message' => 'Cập nhật chi tiết đơn hàng thành công!',
+            'data' => $chitiet
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * 🗑️ Xóa chi tiết đơn hàng
      */
-    public function update(Request $request, chitietdonhang $chitietdonhang)
+    public function destroy($id)
     {
-        //
-    }
+        $chitiet = Chitietdonhang::findOrFail($id);
+        $chitiet->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(chitietdonhang $chitietdonhang)
-    {
-        //
+        return response()->json(['message' => 'Xóa chi tiết đơn hàng thành công!']);
     }
 }

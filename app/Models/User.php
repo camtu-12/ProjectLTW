@@ -45,4 +45,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function hasRole(string|array $roles):bool{
+        if(is_string($roles)){
+            return $this->role === $roles;
+        }
+        foreach($roles as $role){
+            if($this->role === $role)
+                return true;
+        }
+        return false;
+    }
+    public function donhangs()
+    {
+        return $this->hasMany(Donhang::class, 'user_id');
+    }
+    
 }
