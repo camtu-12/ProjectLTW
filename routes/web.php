@@ -25,30 +25,15 @@ Route::get('/dashboard', function () {
     if (!$user) {
         return redirect()->route('login');
     }
-
-    $role = strtolower((string) $user->role);
-    if ($role === 'admin' || $role === 'administrator') {
-        return Inertia::render('Admin/Index', ['user' => $user]);
+    switch ($user->role) {
+        case 'Admin':
+            return Inertia::render('Admin/Index', ['user' => $user]);
+        case 'Khachhang':
+            return Inertia::render('Khachhang/Index', ['user' => $user]);
+        default:
+            return Inertia::render('Khachhang/Index', ['user' => $user]);
     }
-
-    // default: khách hàng
-    return Inertia::render('Khachhang/Index', ['user' => $user]);
-
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route trực tiếp tới trang admin (dùng để test và truy cập nhanh)
-Route::get('/admin', function () {
-    return Inertia::render('Admin/Index');
-})->middleware(['auth', 'verified'])->name('admin.home');
-
-// Admin products pages (frontend-only scaffolding)
-Route::get('/admin/products', function () {
-    return Inertia::render('Admin/Products/Index');
-})->middleware(['auth', 'verified'])->name('admin.products.index');
-
-Route::get('/admin/products/create', function () {
-    return Inertia::render('Admin/Products/Create');
-})->middleware(['auth', 'verified'])->name('admin.products.create');
 
 //Logout route 
 Route::post('/logout', function (Request $request) {
@@ -62,7 +47,25 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->name('logout');
 
-Route::resource('sinhviens', KhachhangController::class)->middleware(['auth', 'verified']);
+Route::resource('khachhang', KhachhangController::class)->middleware(['auth', 'verified']);
+
+// Explicit product pages so `/admin/products` is not captured by the `admin` resource wildcard
+Route::get('/admin/products', function () {
+    return Inertia::render('Admin/Products/Index');
+})->middleware(['auth', 'verified'])->name('admin.products.index');
+
+Route::get('/admin/products/create', function () {
+    return Inertia::render('Admin/Products/Create');
+})->middleware(['auth', 'verified'])->name('admin.products.create');
+
 Route::resource('admin', AdminController::class)->middleware(['auth', 'verified']);
+// Admin products pages (frontend-only Inertia views)
+Route::get('/admin/products', function () {
+    return Inertia::render('Admin/Products/Index');
+})->middleware(['auth', 'verified'])->name('admin.products.index');
+
+
+
+
 require __DIR__.'/auth.php';
 
