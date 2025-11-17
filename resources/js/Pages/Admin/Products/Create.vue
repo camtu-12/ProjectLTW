@@ -1,110 +1,142 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 bg-gray-50 min-h-screen">
     <div class="max-w-6xl mx-auto">
-      <h1 class="text-2xl font-semibold mb-6">Add Product</h1>
+      <h1 class="text-2xl font-semibold mb-6 text-gray-900">Thêm sản phẩm mới</h1>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left form -->
-        <div class="lg:col-span-2 bg-white p-6 rounded shadow-sm">
-          <div class="space-y-4">
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg border border-gray-200">
+          <div class="space-y-6">
+            <!-- Tên sản phẩm -->
             <div>
-              <label class="block text-sm font-medium text-gray-700">Tên sản phẩm *</label>
-              <input v-model="form.name" type="text" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Enter product name" />
-              <p class="text-xs text-gray-400 mt-1">Do not exceed 100 characters when entering the product name.</p>
+              <label class="block text-sm font-medium text-gray-800 mb-2">Tên sản phẩm *</label>
+              <input 
+                v-model="form.tensanpham" 
+                type="text" 
+                maxlength="100"
+                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200" 
+                placeholder="Nhập tên sản phẩm" 
+              />
+              <p class="text-xs text-gray-500 mt-2">{{ form.tensanpham.length }}/100 ký tự</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Slug *</label>
-                <input v-model="form.slug" type="text" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Enter product slug" />
-                <p class="text-xs text-gray-400 mt-1">Do not exceed 100 characters when entering the product slug.</p>
-              </div>
-
-              <div></div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Loại *</label>
-                <select v-model="form.category" class="mt-2 block w-full border rounded px-4 py-2">
-                  <option value="">Chọn loại</option>
-                  <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                </select>
-              </div>
-        
-            </div>
-
+            <!-- Mô tả ngắn -->
             <div>
-              <label class="block text-sm font-medium text-gray-700">Mô tả *</label>
-              <textarea v-model="form.short_description" rows="4" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Short Description"></textarea>
+              <label class="block text-sm font-medium text-gray-800 mb-2">Mô tả ngắn *</label>
+              <textarea 
+                v-model="form.motangan" 
+                rows="3" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200" 
+                placeholder="Nhập mô tả ngắn về sản phẩm"
+              ></textarea>
             </div>
 
+            <!-- Giá gốc và Giá bán -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700">Số lượng: </label>
-                <input v-model.number="form.quantity" type="number" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Quantity" />
+                <label class="block text-sm font-medium text-gray-800 mb-2">Giá gốc *</label>
+                <input 
+                  v-model.number="form.giagoc" 
+                  type="number" 
+                  min="0"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200" 
+                  placeholder="0" 
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-800 mb-2">Giá bán *</label>
+                <input 
+                  v-model.number="form.giaban" 
+                  type="number" 
+                  min="0"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200" 
+                  placeholder="0" 
+                />
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Giá gốc:*</label>
-                <input v-model.number="form.price" type="number" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Regular price" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Giá sale:</label>
-                <input v-model.number="form.sale_price" type="number" class="mt-2 block w-full border rounded px-4 py-2" placeholder="Sale price" />
-              </div>
+            <!-- Mã sản phẩm -->
+            <div>
+              <label class="block text-sm font-medium text-gray-800 mb-2">Mã sản phẩm *</label>
+              <input 
+                v-model="form.masanpham" 
+                type="text" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200" 
+                placeholder="Nhập mã sản phẩm" 
+              />
             </div>
 
-            <div class="flex items-center gap-4">
-
-              <label class="block text-sm font-medium text-gray-700">Stock</label>
-              <select v-model="form.stock" class="mt-1 block border rounded px-3 py-2">
-                <option value="instock">In stock</option>
-                <option value="outofstock">Out of stock</option>
+            <!-- Size -->
+            <div>
+              <label class="block text-sm font-medium text-gray-800 mb-2">Size</label>
+              <select 
+                v-model="form.kichthuoc" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200"
+              >
+                <option value="">Chọn size</option>
+                <option v-for="s in sizes" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
 
-            <div class="flex items-center justify-end">
-              <button @click.prevent="submit" class="bg-blue-600 text-white px-5 py-2 rounded">Save product</button>
+            <!-- Nút lưu -->
+            <div class="flex items-center justify-end pt-6 border-t border-gray-200">
+              <button 
+                @click.prevent="submit" 
+                :disabled="!isFormValid"
+                class="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Lưu sản phẩm
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Right side: uploads and meta -->
-        <div class="bg-white p-6 rounded shadow-sm space-y-4">
+        <!-- Right side: uploads -->
+        <div class="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
+          <!-- Upload ảnh chính -->
           <div>
-            <label class="block text-sm font-medium text-gray-700">Upload images *</label>
-            <div class="mt-2 border-dashed border-2 border-blue-200 rounded h-36 flex items-center justify-center text-gray-400">
+            <label class="block text-sm font-medium text-gray-800 mb-2">Ảnh chính</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg h-36 flex items-center justify-center text-gray-500 hover:border-gray-400 transition-all duration-200 cursor-pointer">
               <div class="text-center">
-                <div class="text-3xl">☁️</div>
-                <div class="mt-2 text-sm">Drop your images here or select <span class="text-blue-600 underline">click to browse</span></div>
+                <div class="text-2xl mb-2">📁</div>
+                <div class="text-sm">Kéo thả ảnh vào đây hoặc <span class="text-gray-700 font-medium">chọn để duyệt</span></div>
               </div>
             </div>
           </div>
 
+          <!-- Upload ảnh gallery -->
           <div>
-            <label class="block text-sm font-medium text-gray-700">Upload Gallery Images</label>
-            <div class="mt-2 border-dashed border-2 border-blue-200 rounded h-36 flex items-center justify-center text-gray-400">
+            <label class="block text-sm font-medium text-gray-800 mb-2">Ảnh gallery</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg h-36 flex items-center justify-center text-gray-500 hover:border-gray-400 transition-all duration-200 cursor-pointer">
               <div class="text-center">
-                <div class="text-3xl">☁️</div>
-                <div class="mt-2 text-sm">Drop your images here or select <span class="text-blue-600 underline">click to browse</span></div>
+                <div class="text-2xl mb-2">🖼️</div>
+                <div class="text-sm">Kéo thả ảnh vào đây hoặc <span class="text-gray-700 font-medium">chọn để duyệt</span></div>
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Category (meta)</label>
-              <input v-model="form.meta_category" type="text" class="mt-2 block w-full border rounded px-4 py-2" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Brand (meta)</label>
-              <input v-model="form.meta_brand" type="text" class="mt-2 block w-full border rounded px-4 py-2" />
+          <!-- Thông tin bổ sung -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 class="text-sm font-medium text-gray-800 mb-3">Thông tin bổ sung</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Trạng thái</label>
+                <select v-model="form.trangthai" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                  <option value="danghoatdong">Đang hoạt động</option>
+                  <option value="ngungkinhdoanh">Ngừng kinh doanh</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Số lượng</label>
+                <input 
+                  v-model.number="form.soluong" 
+                  type="number" 
+                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm" 
+                  placeholder="0" 
+                />
+              </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -112,41 +144,87 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-const categories = ref([
-  { id: 1, name: 'Category1' },
-  { id: 2, name: 'Category2' },
-  { id: 3, name: 'Category3' },
-])
-const brands = ref([
-  { id: 1, name: 'Brand1' },
-  { id: 2, name: 'Brand2' },
-])
+const sizes = ref(['S', 'M', 'L', 'XL', 'XXL'])
 
 const form = ref({
-  name: '',
-  slug: '',
-  category: '',
-  brand: '',
-  short_description: '',
-  sku: '',
-  quantity: 1,
-  price: 0,
-  sale_price: 0,
-  featured: false,
-  stock: 'instock',
-  meta_category: '',
-  meta_brand: '',
+  tensanpham: '',
+  masanpham: '',
+  motangan: '',
+  giagoc: 0,
+  giaban: 0,
+  kichthuoc: '',
+  soluong: 0,
+  trangthai: 'danghoatdong'
 })
 
-function submit() {
-  // For now just log — you can wire to backend endpoint later
-  console.log('Submitting product', form.value)
-  alert('Product saved (mock). Check console for payload.')
+// Validate form
+const isFormValid = computed(() => {
+  return (
+    form.value.tensanpham.trim() !== '' &&
+    form.value.motangan.trim() !== '' &&
+    form.value.giagoc >= 0 &&
+    form.value.giaban >= 0 &&
+    form.value.masanpham.trim() !== ''
+  )
+})
+
+async function submit() {
+  if (!isFormValid.value) {
+    alert('Vui lòng điền đầy đủ các trường bắt buộc (*)')
+    return
+  }
+  
+  try {
+    const response = await fetch('/api/sanphams', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tensanpham: form.value.tensanpham,
+        masanpham: form.value.masanpham,
+        motangan: form.value.motangan,
+        giagoc: parseFloat(form.value.giagoc),
+        giaban: parseFloat(form.value.giaban),
+        kichthuoc: form.value.kichthuoc,
+        soluong: parseInt(form.value.soluong),
+        trangthai: form.value.trangthai
+      })
+    })
+    
+    if (response.ok) {
+      alert('Sản phẩm đã được lưu thành công!')
+      // Reset form
+      form.value = {
+        tensanpham: '',
+        masanpham: '',
+        motangan: '',
+        giagoc: 0,
+        giaban: 0,
+        kichthuoc: '',
+        soluong: 0,
+        trangthai: 'danghoatdong'
+      }
+    } else {
+      alert('Lỗi khi lưu sản phẩm')
+    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert('Có lỗi xảy ra khi lưu sản phẩm')
+  }
 }
 </script>
 
 <style scoped>
-/* small niceties */
+/* Custom scrollbar for select elements */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
 </style>
