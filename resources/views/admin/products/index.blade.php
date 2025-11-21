@@ -37,6 +37,13 @@
         .action-btn:hover {
             transform: scale(1.1);
         }
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -44,7 +51,7 @@
         <!-- Sidebar -->
         <div class="sidebar w-64 p-4">
             <div class="mb-8">
-                <h1 class="text-xl font-bold">Shop Quân Áo</h1>
+                <h1 class="text-xl font-bold">Shop Quần Áo</h1>
                 <p class="text-sm text-gray-300">Admin</p>
             </div>
             
@@ -86,7 +93,7 @@
             </nav>
             
             <div class="mt-8 text-xs text-gray-400">
-                <p>© 2025 Shop Quân Áo</p>
+                <p>© 2025 Shop Quần Áo</p>
             </div>
         </div>
         
@@ -129,6 +136,7 @@
                                     <th class="py-4 px-6 border-b">
                                         <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     </th>
+                                    <th class="py-4 px-6 border-b">Hình ảnh</th> <!-- THÊM CỘT HÌNH ẢNH -->
                                     <th class="py-4 px-6 border-b">Tên sản phẩm</th>
                                     <th class="py-4 px-6 border-b">Mã sản phẩm</th>
                                     <th class="py-4 px-6 border-b">Giá gốc</th>
@@ -146,7 +154,23 @@
                                         <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     </td>
                                     <td class="py-4 px-6">
+                                        <!-- HIỂN THỊ HÌNH ẢNH -->
+                                        @if($product->hinhanh)
+                                            <img src="{{ Storage::url($product->hinhanh) }}" 
+                                                 alt="{{ $product->tensanpham }}" 
+                                                 class="product-image"
+                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zMCAyMEMzMCAyMi4yMDkxIDI4LjIwOTEgMjQgMjYgMjRDMjMuNzkwOSAyNCAyMiAyMi4yMDkxIDIyIDIwQzIyIDE3Ljc5MDkgMjMuNzkwOSAxNiAyNiAxNkMyOC4yMDkxIDE2IDMwIDE3Ljc5MDkgMzAgMjBaIiBmaWxsPSIjOUVBN0FCIi8+CjxwYXRoIGQ9Ik0zNSAzNEgxN0MxNS44OTU0IDM0IDE1IDMzLjEwNDYgMTUgMzJWMjJDMTUgMjAuODk1NCAxNS44OTU0IDIwIDE3IDIwSDE5Ljg4OTFDMjAuNTI3MiAyMCAyMS4xMTc0IDIwLjM4MzkgMjEuNDEzOCAyMS4wMDAxTDIyLjU4NjIgMTguOTk5OUMyMi44ODI2IDE4LjM4MzkgMjMuNDcyOCAxOCAyNC4xMTA5IDE4SDI3Ljg4OTFDMjguNTI3MiAxOCAyOS4xMTc0IDE4LjM4MzkgMjkuNDEzOCAxOS4wMDAxTDMwLjU4NjIgMTYuOTk5OUMzMC44ODI2IDE2LjM4MzkgMzEuNDcyOCAxNiAzMi4xMTA5IDE2SDM1QzM2LjEwNDYgMTYgMzcgMTYuODk1NCAzNyAxOFYzMkMzNyAzMy4xMDQ2IDM2LjEwNDYgMzQgMzUgMzRaIiBmaWxsPSIjOUVBN0FCIi8+Cjwvc3ZnPgo='">
+                                        @else
+                                            <div class="product-image bg-gray-100 flex items-center justify-center text-gray-400">
+                                                <i class="fas fa-image text-lg"></i>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="py-4 px-6">
                                         <div class="font-medium text-gray-900">{{ $product->tensanpham }}</div>
+                                        @if($product->motangan)
+                                            <p class="text-sm text-gray-500 mt-1">{{ $product->motangan }}</p>
+                                        @endif
                                     </td>
                                     <td class="py-4 px-6">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -194,15 +218,19 @@
                                             <button class="action-btn text-gray-600 hover:text-gray-800" title="Sao chép">
                                                 <i class="fas fa-copy"></i>
                                             </button>
-                                            <button class="action-btn text-red-600 hover:text-red-800" title="Xóa">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="action-btn text-red-600 hover:text-red-800" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="9" class="py-12 text-center">
+                                    <td colspan="10" class="py-12 text-center"> <!-- ĐỔI colspan THÀNH 10 -->
                                         <div class="flex flex-col items-center justify-center text-gray-500">
                                             <i class="fas fa-box-open text-4xl mb-4 text-gray-300"></i>
                                             <p class="text-lg font-medium mb-2">Chưa có sản phẩm nào</p>
@@ -280,7 +308,7 @@
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6"> <!-- ĐỔI THÀNH 4 CỘT -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -311,6 +339,17 @@
                         <div>
                             <p class="text-sm font-medium text-gray-600">Ngừng kinh doanh</p>
                             <p class="text-2xl font-bold text-gray-900">{{ $sanphams->where('trangthai', '!=', 'danghoatdong')->count() }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i class="fas fa-image text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Có hình ảnh</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ $sanphams->whereNotNull('hinhanh')->count() }}</p>
                         </div>
                     </div>
                 </div>

@@ -23,7 +23,9 @@ class Sanpham extends Model
         'kichthuoc',
         'soluong',
         'trangthai',
+        'hinhanh',
         'danhmuc_id',
+        'hinhanh',
     ];
 
     public function chitietdonhang()
