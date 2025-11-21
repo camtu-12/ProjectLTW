@@ -2,28 +2,32 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class sanpham extends Model
+class Sanpham extends Model
 {
     use HasFactory;
 
+    protected $table = 'sanphams';
+
+    // Bảng hiện tại không có cột created_at/updated_at nên tắt timestamps
+    public $timestamps = false;
+
     protected $fillable = [
-        'danhmuc_id',
         'tensanpham',
-        'gia',
-        'hinhanh',
-        'mota',
+        'masanpham',
+        'motangan',
+        'giagoc',
+        'giaban',
+        'kichthuoc',
         'soluong',
+        'trangthai',
+        'danhmuc_id',
     ];
 
-    public function danhmuc()
-    {
-        return $this->belongsTo(danhmuc::class);
-    }
     public function chitietdonhang()
     {
-        return $this->hasMany(chitietdonhang::class);
+        return $this->hasMany(Chitietdonhang::class);
     }
 }

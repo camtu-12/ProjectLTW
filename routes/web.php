@@ -50,19 +50,16 @@ Route::post('/logout', function (Request $request) {
 Route::resource('khachhang', KhachhangController::class)->middleware(['auth', 'verified']);
 
 // Explicit product pages so `/admin/products` is not captured by the `admin` resource wildcard
-Route::get('/admin/products', function () {
-    return Inertia::render('Admin/Products/Index');
-})->middleware(['auth', 'verified'])->name('admin.products.index');
+use App\Http\Controllers\SanphamController;
 
-Route::get('/admin/products/create', function () {
-    return Inertia::render('Admin/Products/Create');
-})->middleware(['auth', 'verified'])->name('admin.products.create');
+Route::get('/admin/products', [SanphamController::class, 'index'])->middleware(['auth', 'verified'])->name('admin.products.index');
+
+Route::get('/admin/products/create', [SanphamController::class, 'create'])->middleware(['auth', 'verified'])->name('admin.products.create');
+
+// Save product (used by Admin Create form)
+Route::post('/admin/products', [SanphamController::class, 'store'])->middleware(['auth', 'verified'])->name('admin.products.store');
 
 Route::resource('admin', AdminController::class)->middleware(['auth', 'verified']);
-// Admin products pages (frontend-only Inertia views)
-Route::get('/admin/products', function () {
-    return Inertia::render('Admin/Products/Index');
-})->middleware(['auth', 'verified'])->name('admin.products.index');
 
 
 
