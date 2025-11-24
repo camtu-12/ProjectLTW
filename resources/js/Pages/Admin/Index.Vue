@@ -29,7 +29,7 @@
         <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-gray-100">Danh mục</a>
         <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-gray-100">Đơn hàng</a>
         <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-gray-100">Tài khoản</a>
-        <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-gray-100">Cài đặt</a>
+  <a href="/admin/settings" class="flex items-center gap-3 p-3 rounded hover:bg-gray-100">Cài đặt</a>
       </nav>
 
       <div class="mt-auto p-4 text-xs text-gray-500">

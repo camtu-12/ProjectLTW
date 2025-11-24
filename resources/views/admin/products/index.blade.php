@@ -7,14 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .sidebar {
-            background-color: #1f2937;
-            color: white;
-            min-height: 100vh;
-        }
-        .sidebar a:hover {
-            background-color: #374151;
-        }
         .status-active {
             color: #10b981;
             background-color: #d1fae5;
@@ -48,58 +40,13 @@
 </head>
 <body class="bg-gray-100">
     <div class="flex">
-        <!-- Sidebar -->
-        <div class="sidebar w-64 p-4">
-            <div class="mb-8">
-                <h1 class="text-xl font-bold">Shop Quần Áo</h1>
-                <p class="text-sm text-gray-300">Admin</p>
-            </div>
-            
-            <div class="mb-6">
-                <div class="relative">
-                    <input type="text" placeholder="Search here..." class="w-full bg-gray-700 text-white rounded px-3 py-2 pl-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <i class="fas fa-search absolute left-2 top-3 text-gray-400"></i>
-                </div>
-            </div>
-            
-            <nav>
-                <ul class="space-y-2">
-                    <li>
-                        <a href="#" class="block p-2 rounded hover:bg-gray-700 transition-colors duration-200">
-                            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="block p-2 rounded bg-gray-700 border-l-4 border-blue-500">
-                            <i class="fas fa-box mr-2"></i> Sản phẩm
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="block p-2 rounded hover:bg-gray-700 transition-colors duration-200">
-                            <i class="fas fa-list mr-2"></i> Danh mục
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="block p-2 rounded hover:bg-gray-700 transition-colors duration-200">
-                            <i class="fas fa-shopping-cart mr-2"></i> Đơn hàng
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="block p-2 rounded hover:bg-gray-700 transition-colors duration-200">
-                            <i class="fas fa-cog mr-2"></i> Cài đặt
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            
-            <div class="mt-8 text-xs text-gray-400">
-                <p>© 2025 Shop Quần Áo</p>
-            </div>
-        </div>
+        @include('admin.partials.sidebar')
         
         <!-- Main Content -->
         <div class="flex-1 p-6">
             <div class="bg-white rounded-lg shadow-lg">
+                @include('admin.partials.toolbar')
+
                 <!-- Header -->
                 <div class="flex items-center justify-between p-6 border-b">
                     <div>

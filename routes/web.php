@@ -84,6 +84,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         // Sao chép sản phẩm
         Route::post('/{id}/copy', [SanphamController::class, 'copy'])->name('copy');
     });
+
+    // Admin settings (profile + password)
+    Route::get('/settings', [\App\Http\Controllers\AdminSettingsController::class, 'edit'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\AdminSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/password', [\App\Http\Controllers\AdminSettingsController::class, 'updatePassword'])->name('settings.password');
 });
 
 Route::resource('admin', AdminController::class)->middleware(['auth', 'verified']);
