@@ -11,7 +11,7 @@
         <nav class="mt-4">
             <ul class="space-y-3 text-gray-700">
                 <li>
-                    <a href="#" class="flex items-center gap-3 px-2 py-2 rounded hover:bg-gray-50">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-2 py-2 rounded hover:bg-gray-50">
                         <i class="fas fa-bars w-5 text-gray-500"></i>
                         <span>Dashboard</span>
                     </a>

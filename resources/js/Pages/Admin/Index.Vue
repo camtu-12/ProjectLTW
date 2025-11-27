@@ -48,7 +48,7 @@
           <div class="flex items-center gap-3">
             <div class="flex flex-col items-center">
               <button type="button" @click="logout" class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100">
-                <img src="https://i.pravatar.cc/40" class="w-9 h-9 rounded-full" alt="avatar" />
+                
               </button>
               <div class="text-xs text-gray-700 mt-1">Admin</div>
             </div>

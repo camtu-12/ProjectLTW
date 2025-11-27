@@ -159,9 +159,9 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         <div class="flex justify-center space-x-3">
-                                            <button class="action-btn text-blue-600 hover:text-blue-800" title="Sửa">
+                                            <a href="{{ route('admin.products.edit', $product->id) }}" class="action-btn text-blue-600 hover:text-blue-800" title="Sửa">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
+                                            </a>
                                             <button class="action-btn text-gray-600 hover:text-gray-800" title="Sao chép">
                                                 <i class="fas fa-copy"></i>
                                             </button>

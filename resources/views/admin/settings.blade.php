@@ -36,10 +36,10 @@
                 @endif
 
                 <div class="bg-white rounded-lg p-6 shadow">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                            <form action="{{ route('admin.settings.update') }}" method="POST">
-                                @csrf
+                    <form action="{{ route('admin.settings.update') }}" method="POST">
+                        @csrf
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium mb-1">Họ và tên</label>
                                     <input type="text" name="name" value="{{ old('name', $user->name ?? '') }}" class="w-full border rounded px-3 py-2" />
@@ -52,15 +52,9 @@
                                     <label class="block text-sm font-medium mb-1">Email</label>
                                     <input type="email" name="email" value="{{ old('email', $user->email ?? '') }}" class="w-full border rounded px-3 py-2" />
                                 </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu thay đổi</button>
-                                </div>
-                            </form>
-                        </div>
+                            </div>
 
-                        <div>
-                            <form action="{{ route('admin.settings.password') }}" method="POST">
-                                @csrf
+                            <div>
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium mb-1">Mật khẩu cũ</label>
                                     <input type="password" name="old_password" class="w-full border rounded px-3 py-2" />
@@ -73,12 +67,13 @@
                                     <label class="block text-sm font-medium mb-1">Xác nhận mật khẩu mới</label>
                                     <input type="password" name="new_password_confirmation" class="w-full border rounded px-3 py-2" />
                                 </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Đổi mật khẩu</button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+
+                        <div class="mt-4 flex justify-end">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Lưu thay đổi</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

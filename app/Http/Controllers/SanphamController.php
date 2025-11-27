@@ -128,6 +128,15 @@ class SanphamController extends Controller
     }
 
     /**
+     * Hiển thị form chỉnh sửa sản phẩm (Blade)
+     */
+    public function edit($id)
+    {
+        $sanpham = Sanpham::findOrFail($id);
+        return view('admin.products.edit', compact('sanpham'));
+    }
+
+    /**
      * Cập nhật sản phẩm
      */
     public function update(Request $request, $id)
@@ -161,10 +170,16 @@ class SanphamController extends Controller
 
         $sanpham->update($validated);
 
-        return response()->json([
-            'message' => 'Cập nhật sản phẩm thành công!',
-            'data' => $sanpham
-        ]);
+        // If AJAX/JSON requested, return JSON; otherwise redirect back to list
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'message' => 'Cập nhật sản phẩm thành công!',
+                'data' => $sanpham
+            ]);
+        }
+
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Cập nhật sản phẩm thành công!');
     }
 
     /**
