@@ -61,6 +61,10 @@ Route::post('/admin/products', [SanphamController::class, 'store'])->middleware(
 
 Route::resource('admin', AdminController::class)->middleware(['auth', 'verified']);
 
+// Category page (renders a Vue page for product categories)
+use App\Http\Controllers\CategoryController;
+Route::get('/danh-muc/{slug}', [CategoryController::class, 'show'])->name('category.show');
+
 
 
 
