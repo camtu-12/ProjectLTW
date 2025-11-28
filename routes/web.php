@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\KhachhangController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SanphamController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;    
 use Illuminate\Http\Request;
 
+// Trang chủ
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -17,7 +19,8 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
-// Dashboard — tự động chuyển trang Vue theo vai trò (so sánh không phân biệt hoa/thường)
+
+// Dashboard — tự động chuyển trang theo role
 Route::get('/dashboard', function () {
     /** @var User|null $user */
     $user = Auth::user();
@@ -25,6 +28,7 @@ Route::get('/dashboard', function () {
     if (!$user) {
         return redirect()->route('login');
     }
+
     switch ($user->role) {
         case 'Admin':
             return Inertia::render('Admin/Index', ['user' => $user]);
@@ -35,38 +39,51 @@ Route::get('/dashboard', function () {
     }
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-//Logout route 
+// Logout
 Route::post('/logout', function (Request $request) {
-    Auth::logout(); // Đăng xuất user
+    Auth::logout();
 
-    // Xóa session & regenerate token
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    // Quay về trang login
     return redirect()->route('login');
 })->name('logout');
 
 Route::resource('khachhang', KhachhangController::class)->middleware(['auth', 'verified']);
 
-// Explicit product pages so `/admin/products` is not captured by the `admin` resource wildcard
-use App\Http\Controllers\SanphamController;
+// ==================== ROUTES CHO ADMIN QUẢN LÝ SẢN PHẨM ====================
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(function () {
+    
+    // Routes cho sản phẩm
+    Route::prefix('products')->name('products.')->group(function () {
+        
+        Route::get('/', [SanphamController::class, 'index'])->name('index');
+        Route::get('/create', [SanphamController::class, 'create'])->name('create');
+        Route::post('/', [SanphamController::class, 'store'])->name('store');
+        Route::get('/{id}', [SanphamController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [SanphamController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [SanphamController::class, 'update'])->name('update');
+        Route::patch('/{id}', [SanphamController::class, 'update']); 
+        Route::delete('/{id}', [SanphamController::class, 'destroy'])->name('destroy');
 
-Route::get('/admin/products', [SanphamController::class, 'index'])->middleware(['auth', 'verified'])->name('admin.products.index');
+        // Tìm kiếm sản phẩm
+        Route::get('/search', [SanphamController::class, 'search'])->name('search');
 
-Route::get('/admin/products/create', [SanphamController::class, 'create'])->middleware(['auth', 'verified'])->name('admin.products.create');
+        // Sao chép sản phẩm
+        Route::post('/{id}/copy', [SanphamController::class, 'copy'])->name('copy');
+    });
 
-// Save product (used by Admin Create form)
-Route::post('/admin/products', [SanphamController::class, 'store'])->middleware(['auth', 'verified'])->name('admin.products.store');
+    // Admin settings
+    Route::get('/settings', [\App\Http\Controllers\AdminSettingsController::class, 'edit'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\AdminSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/password', [\App\Http\Controllers\AdminSettingsController::class, 'updatePassword'])->name('settings.password');
+});
 
 Route::resource('admin', AdminController::class)->middleware(['auth', 'verified']);
 
-// Category page (renders a Vue page for product categories)
+// ==================== ROUTE CHO DANH MỤC SẢN PHẨM ====================
 use App\Http\Controllers\CategoryController;
 Route::get('/danh-muc/{slug}', [CategoryController::class, 'show'])->name('category.show');
 
-
-
-
+// Auth
 require __DIR__.'/auth.php';
-
