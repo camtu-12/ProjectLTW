@@ -19,8 +19,6 @@
                   <h4>ÁO NỮ</h4>
                   <ul>
                     <li><Link href="/danh-muc/ao-thun-nu">Áo Thun Nữ</Link></li>
-                    <li><Link href="/danh-muc/ao-so-mi-nu">Áo Sơ Mi Nữ</Link></li>
-                    <li><Link href="/danh-muc/ao-kieu-nu">Áo Kiểu Nữ</Link></li>
                   </ul>
                 </div>
               </div>
@@ -115,15 +113,17 @@
 
     <!-- BEST SELLER -->
     <section class="section">
-      <h2>Sản phẩm bán chạy</h2>
+      <h2>Sản phẩm mới</h2>
       <div class="products">
-        <div v-for="p in bestSeller" :key="p.id" class="product-card">
+        <Link v-for="p in bestSeller" :key="p.id" :href="`/danh-muc/ao-thun-nu`" class="product-card">
           <img :src="p.img" class="img" />
           <div class="title">{{ p.title }}</div>
           <div class="price">{{ format(p.price) }}</div>
-        </div>
+        </Link>
       </div>
     </section>
+
+ 
 
     <!-- BIG BANNER TEXT -->
     <section class="quote">
@@ -160,9 +160,13 @@
 import { Link } from '@inertiajs/inertia-vue3'
 export default {
   components: { Link },
+  props: {
+    bestSeller: { type: [Array, Object], required: false }
+  },
   data() {
     return {
-      bestSeller: [
+      // If server passed `bestSeller` prop, use that; otherwise fallback to sample data
+      bestSeller: (this.bestSeller && this.bestSeller.length) ? this.bestSeller : [
         { id: 1, title: "Áo DK Kim Sweater", price: 860000, img: "/img/p1.jpg" },
         { id: 2, title: "Áo DK Cardigan Đỏ", price: 860000, img: "/img/p2.jpg" },
         { id: 3, title: "Áo DK Grey Sweater", price: 860000, img: "/img/p3.jpg" },

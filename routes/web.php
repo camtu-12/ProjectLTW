@@ -4,6 +4,7 @@ use App\Http\Controllers\KhachhangController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SanphamController;
 use App\Models\User;
+use App\Models\Sanpham;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -33,9 +34,37 @@ Route::get('/dashboard', function () {
         case 'Admin':
             return Inertia::render('Admin/Index', ['user' => $user]);
         case 'Khachhang':
-            return Inertia::render('Khachhang/Index', ['user' => $user]);
+            // Lấy sản phẩm bán chạy (lấy 4 sản phẩm cuối từ DB)
+            $best = Sanpham::orderByDesc('id')->take(4)->get()->map(function($p){
+                $imgPath = $p->hinhanh ? storage_path('app/public/' . ltrim($p->hinhanh, '/')) : null;
+                $imgUrl = ($imgPath && file_exists($imgPath))
+                    ? asset('storage/' . ltrim($p->hinhanh, '/'))
+                    : asset('images/placeholder.svg');
+
+                return [
+                    'id' => $p->id,
+                    'title' => $p->tensanpham,
+                    'price' => $p->giaban ?? $p->giagoc ?? null,
+                    'img' => $imgUrl,
+                ];
+            });
+
+            return Inertia::render('Khachhang/Index', ['user' => $user, 'bestSeller' => $best]);
         default:
-            return Inertia::render('Khachhang/Index', ['user' => $user]);
+            $best = Sanpham::orderByDesc('id')->take(4)->get()->map(function($p){
+                $imgPath = $p->hinhanh ? storage_path('app/public/' . ltrim($p->hinhanh, '/')) : null;
+                $imgUrl = ($imgPath && file_exists($imgPath))
+                    ? asset('storage/' . ltrim($p->hinhanh, '/'))
+                    : asset('images/placeholder.svg');
+
+                return [
+                    'id' => $p->id,
+                    'title' => $p->tensanpham,
+                    'price' => $p->giaban ?? $p->giagoc ?? null,
+                    'img' => $imgUrl,
+                ];
+            });
+            return Inertia::render('Khachhang/Index', ['user' => $user, 'bestSeller' => $best]);
     }
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -84,6 +113,16 @@ Route::resource('admin', AdminController::class)->middleware(['auth', 'verified'
 // ==================== ROUTE CHO DANH MỤC SẢN PHẨM ====================
 use App\Http\Controllers\CategoryController;
 Route::get('/danh-muc/{slug}', [CategoryController::class, 'show'])->name('category.show');
+
+// Routes for shopping cart (giohang)
+use App\Http\Controllers\GiohangController;
+Route::middleware(['auth'])->group(function () {
+    Route::get('/giohang', [GiohangController::class, 'index'])->name('giohang.index');
+    Route::post('/giohang', [GiohangController::class, 'store'])->name('giohang.store');
+    Route::patch('/giohang/{id}', [GiohangController::class, 'update'])->name('giohang.update');
+    Route::delete('/giohang/{id}', [GiohangController::class, 'destroy'])->name('giohang.destroy');
+    Route::get('/giohang/clear/{user_id}', [GiohangController::class, 'clear'])->name('giohang.clear');
+});
 
 // Auth
 require __DIR__.'/auth.php';

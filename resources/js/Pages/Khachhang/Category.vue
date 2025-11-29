@@ -6,11 +6,14 @@
           <div class="category-layout">
             <aside class="sidebar">
               <div class="block">
-                <h4>Danh mục sản phẩm</h4>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <h4 style="margin:0">Danh mục sản phẩm</h4>
+                  <Link href="/danh-muc" class="all-cat">Xem tất cả</Link>
+                </div>
                 <ul class="cat-list">
-                  <li><Link href="/danh-muc/ao-thun-nu">Áo Thun Nữ</Link></li>
-                  <li><Link href="/danh-muc/ao-so-mi-nu">Áo Sơ Mi Nữ</Link></li>
-                  <li><Link href="/danh-muc/vay">Váy</Link></li>
+                  <li>
+                    <Link :href="`/danh-muc/ao-thun-nu`" :class="{ active: slug === 'ao-thun-nu' }">Áo Thun Nữ</Link>
+                  </li>
                 </ul>
               </div>
 
@@ -38,7 +41,7 @@
               <header class="main-header">
                 <div>
                   <h1>{{ displayName }}</h1>
-                  <div class="muted" v-if="products && products.total">{{ products.total }} sản phẩm</div>
+                  <div class="muted" v-if="localProducts && localProducts.length">{{ localProducts.length }} sản phẩm</div>
                 </div>
                 <div class="tools">Sắp xếp:
                   <select aria-label="Sắp xếp">
@@ -60,7 +63,10 @@
                     <div class="title" :title="p.title">{{ p.title }}</div>
                     <div class="bottom">
                       <div class="price">{{ format(p.price) }}</div>
-                      <button class="add">Thêm</button>
+                      <button class="add" :disabled="adding[p.id]" @click.prevent="addToCart(p)">
+                        <span v-if="adding[p.id]">Đang thêm...</span>
+                        <span v-else>Thêm</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -73,6 +79,7 @@
 
 <script>
 import { Link } from '@inertiajs/inertia-vue3'
+import { Inertia } from '@inertiajs/inertia'
 
 export default {
   components: { Link },
@@ -83,7 +90,8 @@ export default {
   },
   data() {
     return {
-      localProducts: (this.products && this.products.data) ? this.products.data : (this.products || [])
+      localProducts: (this.products && this.products.data) ? this.products.data : (this.products || []),
+      adding: {},
     }
   },
   computed: {
@@ -104,7 +112,22 @@ export default {
     }
   },
   methods: {
-    format(v) { return v ? (v.toLocaleString('vi-VN') + '₫') : '' }
+    format(v) { return v ? (v.toLocaleString('vi-VN') + '₫') : '' },
+    addToCart(p) {
+      if (!p || !p.id) return;
+      // Simple per-product loading state
+      this.adding = Object.assign({}, this.adding, { [p.id]: true });
+
+      Inertia.post('/giohang', { sanpham_id: p.id, soluong: 1 }, {
+        onSuccess: () => {
+          // basic feedback; you can replace with nicer UI
+          window.alert('Đã thêm sản phẩm vào giỏ hàng');
+        },
+        onFinish: () => {
+          this.adding = Object.assign({}, this.adding, { [p.id]: false });
+        }
+      });
+    }
   }
 }
 </script>
@@ -114,6 +137,8 @@ export default {
 .crumb { color: #6b7280; margin-bottom: 12px }
   .category-layout { display:grid; grid-template-columns: 280px 1fr; gap:32px; align-items:start; }
   .sidebar .block { background:#fff; padding:18px; border-radius:10px; margin-bottom:16px; border:1px solid #eef2f6 }
+  .all-cat { color:#6b7280; font-size:13px; text-decoration:none }
+  .cat-list li a.active { font-weight:700; background:#f8fafc; padding:6px 8px; border-radius:6px }
   .sidebar h4 { margin:0 0 12px 0; font-size:14px; color:#0f172a; position:relative; padding-left:10px }
   .sidebar h4:before { content:''; width:4px; height:18px; background:#ef4444; position:absolute; left:0; top:6px; border-radius:3px }
   .cat-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px }
@@ -133,7 +158,7 @@ export default {
   .products { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:24px }
   .product-card { background:#fff; border-radius:12px; overflow:hidden; border:1px solid #eef2f6; transition: box-shadow .18s ease, transform .18s ease; display:flex; flex-direction:column }
   .product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(2,6,23,0.06) }
-  .img-wrap { width:100%; height:280px; background:#fbfbfc; position:relative; display:flex; align-items:center; justify-content:center }
+  .img-wrap { width:100%; height:360px; background:#fbfbfc; position:relative; display:flex; align-items:center; justify-content:center }
   .img-wrap img { width:100%; height:100%; object-fit:cover; display:block }
   .img-wrap .badge { position:absolute; right:10px; top:10px; background:linear-gradient(180deg,#ef4444,#dc2626); color:#fff; padding:6px 8px; border-radius:8px; font-size:12px; font-weight:700 }
 

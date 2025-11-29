@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Giohang;
 use App\Models\Sanpham;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GiohangController extends Controller
 {
@@ -13,7 +14,11 @@ class GiohangController extends Controller
      */
     public function index(Request $request)
     {
-        $userId = $request->user_id; // hoặc Auth::id() nếu đã đăng nhập
+        $userId = $request->input('user_id') ?? Auth::id();
+        if (! $userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $giohang = Giohang::with('sanpham')
             ->where('user_id', $userId)
             ->get();
@@ -26,30 +31,38 @@ class GiohangController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'user_id' => 'required|integer',
+        $data = $request->validate([
             'sanpham_id' => 'required|integer|exists:sanphams,id',
-            'soluong' => 'required|integer|min:1',
+            'soluong' => 'sometimes|integer|min:1',
+            'user_id' => 'sometimes|integer'
         ]);
 
-        // Lấy giá sản phẩm để tính tổng tiền
-        $sanpham = Sanpham::findOrFail($validated['sanpham_id']);
-        $tongtien = $sanpham->gia * $validated['soluong'];
+        $userId = $request->input('user_id') ?? Auth::id();
+        if (! $userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $soluong = $data['soluong'] ?? 1;
+
+        // Lấy giá sản phẩm để tính tổng tiền (hỗ trợ giaban hoặc giagoc)
+        $sanpham = Sanpham::findOrFail($data['sanpham_id']);
+        $price = $sanpham->giaban ?? $sanpham->giagoc ?? $sanpham->gia ?? 0;
+        $tongtien = $price * $soluong;
 
         // Nếu sản phẩm đã có trong giỏ -> cộng dồn
-        $giohang = Giohang::where('user_id', $validated['user_id'])
-            ->where('sanpham_id', $validated['sanpham_id'])
+        $giohang = Giohang::where('user_id', $userId)
+            ->where('sanpham_id', $data['sanpham_id'])
             ->first();
 
         if ($giohang) {
-            $giohang->soluong += $validated['soluong'];
-            $giohang->tongtien = $giohang->soluong * $sanpham->gia;
+            $giohang->soluong += $soluong;
+            $giohang->tongtien = $giohang->soluong * $price;
             $giohang->save();
         } else {
             $giohang = Giohang::create([
-                'user_id' => $validated['user_id'],
-                'sanpham_id' => $validated['sanpham_id'],
-                'soluong' => $validated['soluong'],
+                'user_id' => $userId,
+                'sanpham_id' => $data['sanpham_id'],
+                'soluong' => $soluong,
                 'tongtien' => $tongtien,
             ]);
         }
