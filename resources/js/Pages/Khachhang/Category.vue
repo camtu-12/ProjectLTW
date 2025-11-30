@@ -92,7 +92,29 @@ export default {
     return {
       localProducts: (this.products && this.products.data) ? this.products.data : (this.products || []),
       adding: {},
+      // map of sanpham_id -> { id: giohang_id, soluong }
+      cartMap: {},
     }
+  },
+  mounted() {
+    // initial load of user's cart to know existing items (so we can PATCH instead of POST)
+    ;(async () => {
+      try {
+        const res = await fetch('/giohang', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!Array.isArray(json)) return
+        // build cartMap
+        this.cartMap = {}
+        json.forEach(ci => {
+          // ci is a giohang row with sanpham_id and soluong
+          const pid = ci.sanpham_id || (ci.sanpham && ci.sanpham.id)
+          if (pid) this.cartMap[pid] = { id: ci.id, soluong: ci.soluong || 0 }
+        })
+      } catch (err) {
+        console.debug('Failed to load initial cart map', err)
+      }
+    })()
   },
   computed: {
     displayName() {
@@ -113,20 +135,87 @@ export default {
   },
   methods: {
     format(v) { return v ? (v.toLocaleString('vi-VN') + '₫') : '' },
-    addToCart(p) {
+    async addToCart(p) {
       if (!p || !p.id) return;
       // Simple per-product loading state
       this.adding = Object.assign({}, this.adding, { [p.id]: true });
 
-      Inertia.post('/giohang', { sanpham_id: p.id, soluong: 1 }, {
-        onSuccess: () => {
-          // basic feedback; you can replace with nicer UI
-          window.alert('Đã thêm sản phẩm vào giỏ hàng');
-        },
-        onFinish: () => {
-          this.adding = Object.assign({}, this.adding, { [p.id]: false });
+      // (debug) Removed optimistic dispatch to avoid visual duplicates.
+      // If you need optimistic UI, we can re-enable it after debugging.
+      console.debug('[cart] addToCart start', { productId: p.id })
+
+      const tokenEl = document.querySelector('meta[name="csrf-token"]')
+      const csrf = tokenEl ? tokenEl.getAttribute('content') : ''
+
+      try {
+        // If product already exists in user's cart, PATCH the existing giohang row
+        const existing = this.cartMap[p.id]
+        console.debug('[cart] existing map lookup', { productId: p.id, existing })
+        if (existing && existing.id) {
+          // Product already exists in cart — per requirement, do not add/increment.
+          console.debug('[cart] item already in cart, skipping add', { productId: p.id, existing })
+          window.alert('Sản phẩm đã có trong giỏ hàng')
+          // optionally open the cart UI by dispatching cart:updated with current cart
+          await this._refreshCartAndNotify()
+        } else {
+          // create new cart row
+          const res = await fetch('/giohang', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ sanpham_id: p.id, soluong: 1 })
+          })
+
+          const json = await res.json().catch(() => null)
+          console.debug('[cart] POST /giohang response', { status: res.status, body: json })
+          if (res.ok) {
+            window.alert(json.message || 'Đã thêm sản phẩm vào giỏ hàng')
+            const cartJson = await this._refreshCartAndNotify()
+            // Notify listeners and request the cart UI to open with product metadata
+            window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: cartJson, product: p, open: true } }))
+          } else if (res.status === 401) {
+            window.alert(json?.message || 'Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng')
+            window.dispatchEvent(new CustomEvent('cart:rollback', { detail: { product: p, qty: 1 } }))
+            window.dispatchEvent(new CustomEvent('auth:required'))
+          } else {
+            window.alert(json?.message || 'Lỗi khi thêm sản phẩm')
+            window.dispatchEvent(new CustomEvent('cart:rollback', { detail: { product: p, qty: 1 } }))
+          }
         }
-      });
+      } catch (err) {
+        console.error('Add to cart failed', err)
+        window.alert('Lỗi khi thêm sản phẩm')
+        window.dispatchEvent(new CustomEvent('cart:rollback', { detail: { product: p, qty: 1 } }))
+      } finally {
+        this.adding = Object.assign({}, this.adding, { [p.id]: false });
+      }
+    }
+
+    ,
+    async _refreshCartAndNotify() {
+      try {
+        const cartRes = await fetch('/giohang', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        const cartJson = cartRes.ok ? await cartRes.json() : null
+        console.debug('[cart] refreshed cart', { length: Array.isArray(cartJson) ? cartJson.length : null, cart: cartJson })
+        // rebuild local cartMap
+        this.cartMap = {}
+        if (Array.isArray(cartJson)) {
+          cartJson.forEach(ci => {
+            const pid = ci.sanpham_id || (ci.sanpham && ci.sanpham.id)
+            if (pid) this.cartMap[pid] = { id: ci.id, soluong: ci.soluong || 0 }
+          })
+        }
+        window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: cartJson } }))
+        return cartJson
+      } catch (err) {
+        console.warn('Failed to refresh cart after add/update', err)
+        return null
+      }
     }
   }
 }
@@ -175,5 +264,17 @@ export default {
 @media (max-width: 600px) {
   .products { grid-template-columns: 1fr; }
   .img-wrap { height:220px }
+}
+
+@media (max-width: 420px) {
+  .img-wrap { height:160px }
+  .product-card .title { white-space: normal; font-size:14px }
+  .add { width:100%; padding:10px 12px }
+  .products { gap:12px }
+}
+
+@media (max-width: 768px) {
+  .products { grid-template-columns: repeat(2, 1fr) }
+  .img-wrap { height:180px }
 }
 </style>

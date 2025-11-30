@@ -12,7 +12,8 @@ class giohang extends Model
         'user_id',
         'sanpham_id',
         'soluong',
-        'tongtien',
+        'giaban',
+        'hinhanh',
     ];
 
     public function user()

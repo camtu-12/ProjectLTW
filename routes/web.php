@@ -124,5 +124,45 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/giohang/clear/{user_id}', [GiohangController::class, 'clear'])->name('giohang.clear');
 });
 
+// Cart page (rendered via Inertia)
+use App\Models\Giohang;
+Route::get('/cart', function () {
+    $user = Auth::user();
+    if (! $user) {
+        return redirect()->route('login');
+    }
+
+    $items = Giohang::with('sanpham')
+        ->where('user_id', $user->id)
+        ->get()
+        ->map(function ($g) {
+            $p = $g->sanpham;
+            $price = $p->giaban ?? $p->giagoc ?? $p->gia ?? 0;
+            $img = asset('images/placeholder.svg');
+            if (isset($p->hinhanh) && $p->hinhanh) {
+                $imgPath = storage_path('app/public/' . ltrim($p->hinhanh, '/'));
+                if ($imgPath && file_exists($imgPath)) $img = asset('storage/' . ltrim($p->hinhanh, '/'));
+            }
+
+            return [
+                'id' => $g->id,
+                'sanpham_id' => $g->sanpham_id,
+                'title' => $p->tensanpham ?? '',
+                'variant' => '',
+                'img' => $img,
+                'price' => $price,
+                'soluong' => $g->soluong,
+                'tongtien' => $g->tongtien,
+            ];
+        });
+
+    $total = $items->sum('tongtien');
+
+    return Inertia::render('Khachhang/Cart', [
+        'items' => $items,
+        'total' => $total,
+    ]);
+})->name('cart')->middleware('auth');
+
 // Auth
 require __DIR__.'/auth.php';

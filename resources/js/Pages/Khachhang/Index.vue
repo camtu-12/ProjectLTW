@@ -11,12 +11,9 @@
           <a href="/">Trang chủ</a>
 
           <div class="nav-item">
-            <a class="nav-link">Danh mục</a>
-
             <div class="mega">
               <div class="mega-grid">
                 <div class="mega-col">
-                  <h4>ÁO NỮ</h4>
                   <ul>
                     <li><Link href="/danh-muc/ao-thun-nu">Áo Thun Nữ</Link></li>
                   </ul>
@@ -47,15 +44,62 @@
               </div>
             </div>
 
-          <a href="/cart" class="action-link action-cart">
+          <button type="button" class="action-link action-cart" @click.stop.prevent="toggleCart">
             <div class="action-icon" aria-hidden>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 2l1.5 3h9L18 2H6z" fill="#fff"/><path d="M3 6h18l-1.5 14.5a2 2 0 0 1-2 1.5H6.5a2 2 0 0 1-2-1.5L3 6z" stroke="#374151" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <div class="cart-badge">{{ cartCount }}</div>
+            <div v-if="cartCount" class="cart-badge">{{ cartCount }}</div>
             <div class="action-label">GIỎ HÀNG</div>
-          </a>
+          </button>
         </div>
       </header>
+
+      <!-- CART MODAL / PANEL -->
+      <div v-if="showCart" class="cart-backdrop" @click.self="closeCart">
+        <div class="cart-panel">
+          <h3>Giỏ hàng của bạn</h3>
+
+          <div class="cart-table">
+            <div class="cart-head">
+              <div class="col product">THÔNG TIN SẢN PHẨM</div>
+              <div class="col price">ĐƠN GIÁ</div>
+              <div class="col qty">SỐ LƯỢNG</div>
+              <div class="col total">THÀNH TIỀN</div>
+            </div>
+
+            <div v-for="(item, idx) in cartItems" :key="item.id" class="cart-row">
+              <div class="col product">
+                <img :src="item.img" alt="" class="thumb" />
+                <div class="meta">
+                  <div class="title">{{ item.title }}</div>
+                  <div class="props">{{ item.size }} / {{ item.color }} <button class="link-btn" @click.prevent="removeItem(idx)">Xóa</button></div>
+                </div>
+              </div>
+
+              <div class="col price">{{ format(item.price) }}</div>
+
+              <div class="col qty">
+                <div class="qty-control">
+                  <button type="button" class="btn-qty" @click="decreaseQty(idx)">-</button>
+                  <input type="text" class="qty-input" :value="item.qty" readonly />
+                  <button type="button" class="btn-qty" @click="increaseQty(idx)">+</button>
+                </div>
+              </div>
+
+              <div class="col total">{{ format(item.price * item.qty) }}</div>
+            </div>
+
+          </div>
+
+          <div class="cart-footer">
+            <div class="left">Tiếp tục mua hàng</div>
+            <div class="right">
+              <div class="summary">TỔNG TIỀN: <span class="amount">{{ format(cartTotal) }}</span></div>
+              <button class="btn checkout">THANH TOÁN</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
     <!-- BANNER -->
     <section class="banner">
@@ -113,7 +157,7 @@
 
     <!-- BEST SELLER -->
     <section class="section">
-      <h2>Sản phẩm mới</h2>
+      <h2>Sản phẩm bán chạy</h2>
       <div class="products">
         <Link v-for="p in bestSeller" :key="p.id" :href="`/danh-muc/ao-thun-nu`" class="product-card">
           <img :src="p.img" class="img" />
@@ -122,8 +166,6 @@
         </Link>
       </div>
     </section>
-
- 
 
     <!-- BIG BANNER TEXT -->
     <section class="quote">
@@ -176,7 +218,8 @@ export default {
         { id: 5, title: "Sweater Màu Be", price: 860000, img: "/img/p5.jpg" },
         { id: 6, title: "Cardigan Đỏ", price: 860000, img: "/img/p6.jpg" },
       ],
-      cartCount: 0,
+      showCart: false,
+      cartItems: [],
       showLoginModal: false,
       showRegisterModal: false,
       registerForm: {
@@ -190,16 +233,170 @@ export default {
     }
   },
   created() {
-    // placeholder cart count; replace with real data when integrating
-    this.cartCount = 0
+    // placeholder cart items; in real integration load from server/session
   },
   mounted() {
     document.addEventListener('click', this.onDocumentClick)
+    // listen for global cart updates (dispatched after successful non-Inertia add)
+    window.addEventListener('cart:updated', this.onCartUpdated)
+    window.addEventListener('cart:rollback', this.onCartRollback)
+    window.addEventListener('auth:required', () => { this.openLoginModal() })
+    // Do NOT auto-load server cart on mount. Cart will be loaded when user
+    // opens the cart or when a cart:updated event with server cart is dispatched.
   },
   beforeUnmount() {
     document.removeEventListener('click', this.onDocumentClick)
+    window.removeEventListener('cart:updated', this.onCartUpdated)
+    window.removeEventListener('cart:rollback', this.onCartRollback)
+  },
+  computed: {
+    cartCount() {
+      return this.cartItems.reduce((s, i) => s + (i.qty || 0), 0)
+    },
+    cartTotal() {
+      return this.cartItems.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0)
+    }
   },
   methods: {
+    toggleCart() {
+      const willOpen = !this.showCart
+      this.showCart = willOpen
+      // if opening the cart, load server cart so the user sees current items
+      if (willOpen) {
+        this.loadCart()
+      }
+    }
+    , closeCart() {
+      this.showCart = false
+    }
+    , async increaseQty(index) {
+      if (!this.cartItems[index]) return
+      const item = this.cartItems[index]
+      const newQty = (item.qty || 0) + 1
+      // optimistic UI: mark updating
+      this.$set ? this.$set(item, 'updating', true) : (item.updating = true)
+      try {
+        const tokenEl = document.querySelector('meta[name="csrf-token"]')
+        const csrf = tokenEl ? tokenEl.getAttribute('content') : ''
+        // If item.id is giohang id, PATCH that row; otherwise fallback to refreshing cart
+        if (item && item.id) {
+          const res = await fetch(`/giohang/${item.id}`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ soluong: newQty })
+          })
+
+          if (res.ok) {
+            // refresh server cart for canonical data
+            await this.loadCart()
+          } else if (res.status === 401) {
+            window.dispatchEvent(new CustomEvent('auth:required'))
+            window.alert('Bạn cần đăng nhập để thay đổi giỏ hàng')
+          } else {
+            const json = await res.json().catch(() => null)
+            console.warn('Failed to update qty', json)
+            window.alert(json?.message || 'Lỗi khi cập nhật số lượng')
+          }
+        }
+      } catch (err) {
+        console.error('increaseQty error', err)
+        window.alert('Lỗi mạng khi cập nhật giỏ hàng')
+      } finally {
+        if (item) item.updating = false
+      }
+    }
+    , async decreaseQty(index) {
+      if (!this.cartItems[index]) return
+      const item = this.cartItems[index]
+      const current = item.qty || 1
+      const newQty = current - 1
+      // if newQty < 1 => remove
+      if (newQty < 1) {
+        return this.removeItem(index)
+      }
+
+      this.$set ? this.$set(item, 'updating', true) : (item.updating = true)
+      try {
+        const tokenEl = document.querySelector('meta[name="csrf-token"]')
+        const csrf = tokenEl ? tokenEl.getAttribute('content') : ''
+        if (item && item.id) {
+          const res = await fetch(`/giohang/${item.id}`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ soluong: newQty })
+          })
+
+          if (res.ok) {
+            await this.loadCart()
+          } else if (res.status === 401) {
+            window.dispatchEvent(new CustomEvent('auth:required'))
+            window.alert('Bạn cần đăng nhập để thay đổi giỏ hàng')
+          } else {
+            const json = await res.json().catch(() => null)
+            console.warn('Failed to update qty', json)
+            window.alert(json?.message || 'Lỗi khi cập nhật số lượng')
+          }
+        }
+      } catch (err) {
+        console.error('decreaseQty error', err)
+        window.alert('Lỗi mạng khi cập nhật giỏ hàng')
+      } finally {
+        if (item) item.updating = false
+      }
+    }
+    , async removeItem(index) {
+      if (!this.cartItems[index]) return
+      const item = this.cartItems[index]
+      // mark updating to prevent duplicate clicks
+      this.$set ? this.$set(item, 'updating', true) : (item.updating = true)
+      try {
+        const tokenEl = document.querySelector('meta[name="csrf-token"]')
+        const csrf = tokenEl ? tokenEl.getAttribute('content') : ''
+        if (item && item.id) {
+          const res = await fetch(`/giohang/${item.id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+
+          if (res.ok) {
+            // refresh server canonical cart
+            await this.loadCart()
+          } else if (res.status === 401) {
+            window.dispatchEvent(new CustomEvent('auth:required'))
+            window.alert('Bạn cần đăng nhập để thay đổi giỏ hàng')
+          } else {
+            const json = await res.json().catch(() => null)
+            console.warn('Failed to delete item', json)
+            window.alert(json?.message || 'Lỗi khi xóa sản phẩm')
+          }
+        } else {
+          // fallback: remove local
+          this.cartItems.splice(index, 1)
+        }
+      } catch (err) {
+        console.error('removeItem error', err)
+        window.alert('Lỗi mạng khi xóa sản phẩm')
+      } finally {
+        if (item) item.updating = false
+      }
+    },
     format(v) {
       return v.toLocaleString("vi-VN") + "₫"
     }
@@ -236,6 +433,94 @@ export default {
         this.showAccountDropdown = false
       }
     }
+    , onCartUpdated(e) {
+      try {
+        const payload = e && e.detail ? e.detail : null
+        if (!payload) return
+
+        // payload may be { server: json, product: p } (we dispatch like that from Category.vue)
+        const server = payload.server || payload
+        const d = (server && server.data) ? server.data : server
+
+        // product metadata from event (preferred)
+        const prod = payload.product || null
+
+        const sanphamId = d && (d.sanpham_id || d.id)
+        const qty = d && (d.soluong || d.qty || 1)
+
+        // prefer canonical backend field names (tensanpham, giaban, hinhanh)
+        // Prefer explicit product price fields; fallback to the giohang row's `giaban` or the sanpham relation
+        const price = prod ? (prod.price || prod.giaban || prod.giagoc || 0) : (d && (d.giaban || (d.sanpham && (d.sanpham.giaban || d.sanpham.giagoc || d.sanpham.gia))) ? (d.giaban || (d.sanpham && (d.sanpham.giaban || d.sanpham.giagoc || d.sanpham.gia))) : 0)
+        const title = prod ? (prod.title || prod.tensanpham || prod.ten) : ((d && (d.tensanpham || d.ten)) ? (d.tensanpham || d.ten) : (`Sản phẩm ${sanphamId}`))
+        const img = prod ? (prod.img || prod.hinhanh || prod.anh) : '/images/placeholder.svg'
+
+        // If server returned full cart, map it to local items (preferred)
+        if (payload.cart && Array.isArray(payload.cart)) {
+          // server cart items are models with 'sanpham' relation
+          this.cartItems = payload.cart.map(ci => ({
+            id: ci.id,
+            // map common variants of product fields from backend
+            title: (ci.sanpham && (ci.sanpham.tensanpham || ci.sanpham.title || ci.sanpham.ten)) || (`Sản phẩm ${ci.sanpham_id}`),
+            size: ci.size || 'S',
+            color: ci.color || '',
+            // Use unit price from giohang row (`giaban`) when available, otherwise use sanpham price fields
+            price: (ci.giaban) || (ci.sanpham && (ci.sanpham.giaban || ci.sanpham.giagoc || ci.sanpham.price || ci.sanpham.gia)) || 0,
+            qty: ci.soluong || 1,
+            // image may be stored on the giohang row or in the sanpham relation
+            img: (ci.hinhanh) || (ci.sanpham && (ci.sanpham.hinhanh || ci.sanpham.img || ci.sanpham.anh)) || '/images/placeholder.svg'
+          }))
+        } else {
+          // if already in cart, update qty; otherwise push new item
+          const idx = this.cartItems.findIndex(i => String(i.id) === String(sanphamId))
+          if (idx >= 0) {
+            this.cartItems[idx].qty = (this.cartItems[idx].qty || 0) + (qty || 1)
+          } else {
+            this.cartItems.push({ id: sanphamId, title, size: (d && d.size) || 'S', color: (d && d.color) || '', price: price || 0, qty: qty || 1, img })
+          }
+        }
+
+        // Do not auto-open the cart on cart updates.
+        // The cart UI should appear only when the user explicitly clicks the cart button.
+        // If the updater requested the cart to open (e.g. after Add), honor it.
+        if (payload && payload.open) {
+          this.showCart = true
+        }
+      } catch (err) {
+        console.error('onCartUpdated error', err)
+      }
+    }
+    , async loadCart() {
+      try {
+        const res = await fetch('/giohang', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        if (!res.ok) return
+        const json = await res.json()
+        if (Array.isArray(json)) {
+          // reuse the same mapping logic as onCartUpdated
+          window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: json } }))
+        }
+      } catch (err) {
+        console.debug('loadCart failed', err)
+      }
+    }
+    , onCartRollback(e) {
+      try {
+        const payload = e && e.detail ? e.detail : null
+        if (!payload || !payload.product) return
+        const prod = payload.product
+        const qty = payload.qty || 1
+
+        const idx = this.cartItems.findIndex(i => String(i.id) === String(prod.id))
+        if (idx === -1) return
+        // decrement or remove
+        if ((this.cartItems[idx].qty || 0) > qty) {
+          this.cartItems[idx].qty = (this.cartItems[idx].qty || 0) - qty
+        } else {
+          this.cartItems.splice(idx, 1)
+        }
+      } catch (err) {
+        console.error('onCartRollback error', err)
+      }
+    }
   }
 }
 </script>
@@ -253,14 +538,14 @@ export default {
   background: #fff;
 }
 
-/* HEADER */
 .header {
   max-width: 1200px;
   margin: 0 auto;
   padding: 22px 20px;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  column-gap: 20px;
   border-bottom: 1px solid #f1f5f9;
 }
 .logo {
@@ -274,18 +559,36 @@ export default {
   text-decoration: none;
   color: #374151;
   font-size: 14px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 .nav a:hover { background: #f8fafc; color: #111827; }
 
 /* header layout helpers */
-.header-left { display:flex; align-items:center; gap:22px; }
-.nav { display:flex; gap:20px; align-items:center; }
-.nav a, .nav-link { display:inline-flex; align-items:center; padding:8px 10px; color:#374151; border-radius:6px; font-size:14px; }
+.header-left { display:flex; align-items:center; gap:22px; grid-column: 1 / 2 }
+.nav { display:flex; gap:20px; align-items:center }
+.nav > a, .nav .mega ul li a, .nav-link { display:inline-flex; align-items:center; padding:8px 10px; color:#374151; border-radius:6px; font-size:14px; line-height:1 }
 .nav a:hover, .nav-link:hover { background:#f8fafc; color:#111827; }
-.header-actions { display:flex; align-items:center; gap:18px; }
-.center-nav { flex: 1; justify-content: center; }
+
+/* Ensure megamenu links match top-level nav links for consistent alignment */
+.nav .mega { display: block; }
+.nav .mega ul { margin: 0; padding: 0; list-style: none; display: flex; gap: 12px; align-items: center; }
+.nav .mega ul li { margin: 0; }
+.nav .mega ul li a { display: inline-flex; align-items: center; padding: 8px 10px; color: #374151; font-size: 14px; text-decoration: none; border-radius: 6px; }
+.nav .mega ul li a:hover { background:#f8fafc; color:#111827 }
+.header-actions { display:flex; align-items:center; gap:18px; grid-column: 3 / 4; justify-self: end }
+
+/* place center nav in middle column and center it */
+.center-nav { grid-column: 2 / 3; justify-self: center; display:flex; gap:20px; align-items:center }
+
+@media (max-width: 1024px) {
+  /* Revert to flex layout on narrower screens for a simpler flow */
+  .header { display:flex; justify-content:space-between; }
+  .center-nav { grid-column: auto; justify-self: auto; }
+}
 .action-link { display:flex; flex-direction:column; align-items:center; text-decoration:none; color:#374151; font-size:12px; }
 .action-icon { width:56px; height:56px; border-radius:9999px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #eef2ff; box-shadow:0 2px 6px rgba(2,6,23,0.06); }
 .action-label { margin-top:6px; font-weight:600; font-size:12px; color:#111827; }
@@ -335,19 +638,20 @@ export default {
 
 /* MEGA MENU */
 .nav { position: relative; }
-.nav-item { position: relative; }
+.nav-item { position:relative; }
 .nav-link { display:inline-block; padding:6px 8px; }
 .mega {
-  display: none;
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  width: 720px;
-  background: #fff;
-  padding: 18px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(2,6,23,0.08);
-  z-index: 80;
+  /* Always visible: show submenu inline under the nav label */
+  display: block !important;
+  position: static !important;
+  left: auto;
+  top: auto;
+  width: auto !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  z-index: 1;
 }
 .nav-item:hover > .mega { display: block; }
 .mega-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -358,7 +662,8 @@ export default {
 .mega-col a:hover { color:#111827; }
 
 @media (max-width: 900px){
-  .mega { left: 10px; right: 10px; width: auto; }
+  /* On small screens keep megamenu visible but stacked */
+  .mega { left: 10px; right: 10px; width: auto; background: #fff; padding: 12px; box-shadow: 0 10px 30px rgba(2,6,23,0.08); border-radius:8px }
   .mega-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -447,6 +752,58 @@ export default {
   .product-card .img { height: 220px; }
   .header { padding: 14px 12px; }
   .policy { padding: 10px; gap: 8px; }
+}
+
+/* CART PANEL */
+.cart-backdrop { position: fixed; inset: 0; background: rgba(2,6,23,0.35); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; z-index:300; }
+.cart-panel { width: 980px; max-width: calc(100% - 40px); background:#fff; border-radius:10px; padding:18px; box-shadow:0 30px 80px rgba(2,6,23,0.14); }
+.cart-panel h3 { margin:0 0 12px 0; font-family:'Playfair Display', serif; }
+.cart-table { border:1px solid #eef2f6; border-radius:8px; overflow:hidden; background:#fff; }
+.cart-head, .cart-row { display:grid; grid-template-columns: 1fr 110px 160px 160px; gap:12px; align-items:center; padding:16px; border-bottom:1px solid #f3f6f8; }
+.cart-head { background:#fbfbfd; font-weight:700; color:#6b7280; text-transform:uppercase; font-size:13px; }
+.cart-row .product { display:flex; gap:12px; align-items:center; }
+.cart-row .thumb { width:92px; height:92px; object-fit:cover; border-radius:6px; border:1px solid #f1f5f9; }
+.cart-row .meta { font-size:13px; color:#374151; }
+.cart-row .meta .title { font-weight:700; margin-bottom:6px; }
+.link-btn { background:transparent; border:none; color:#6b7280; margin-left:8px; cursor:pointer; }
+.qty-control { display:inline-flex; align-items:center; gap:8px; }
+.btn-qty { width:28px; height:28px; border-radius:6px; border:1px solid #e6e9ef; background:#fff; cursor:pointer; }
+.qty-input { width:44px; text-align:center; border:1px solid #eef2f6; height:32px; border-radius:6px; }
+.cart-footer { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+.cart-footer .summary { margin-right:12px; font-weight:700; color:#111827; }
+.btn.checkout { background:#000; color:#fff; padding:12px 20px; border-radius:6px; }
+
+@media (max-width: 900px){
+  .cart-panel { width: 100%; padding:12px; }
+  .cart-head, .cart-row { grid-template-columns: 1fr 90px 120px 120px; }
+  .cart-row .thumb { width:72px; height:72px }
+}
+
+/* Additional responsive rules */
+@media (max-width: 1024px) {
+  .nav { display: none; }
+  .center-nav { display: none; }
+  .header { padding: 12px; }
+}
+
+@media (max-width: 768px) {
+  .header { flex-direction: column; align-items: stretch; gap: 8px; }
+  .header-left { width: 100%; display:flex; justify-content:space-between; align-items:center }
+  .header-actions { width: 100%; display:flex; justify-content: flex-end; gap: 10px }
+  .banner img { height: 180px; }
+  .product-card .img { height: 180px }
+  .products { gap: 14px }
+  .cart-backdrop { align-items:flex-end; padding:0 }
+  .cart-panel { width: 100%; max-width: 100%; border-radius: 12px 12px 0 0; height: 75vh; overflow:auto }
+  .cart-head, .cart-row { grid-template-columns: 1fr 80px 100px 100px }
+}
+
+@media (max-width: 420px) {
+  .product-card .img { height: 140px }
+  .cart-head, .cart-row { grid-template-columns: 1fr 70px 90px 90px }
+  .cart-row .thumb { width:56px; height:56px }
+  .action-icon { width:44px; height:44px }
+  .action-label { font-size:11px }
 }
 
 </style>
